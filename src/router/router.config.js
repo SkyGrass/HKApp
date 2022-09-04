@@ -1,9 +1,8 @@
 import Home from '@/views/home'
-import In from '@/views/in'
-import Out from '@/views/out'
-import Pin from '@/views/pin'
+import SubHome from '@/views/home/subIndex'
+
 import So from '@/views/so'
-import Stock from '@/views/stock'
+import Query from '@/views/query'
 /**
  * 基础路由
  * @type { *[] }
@@ -22,6 +21,12 @@ const routerMap = [
     meta: { title: '主页', keepAlive: false }
   },
   {
+    path: '/subhome',
+    name: 'SubHome',
+    component: SubHome,
+    meta: { title: '主页', keepAlive: false }
+  },
+  {
     path: '/404',
     component: () => import('@/views/404'),
     hidden: true
@@ -30,70 +35,12 @@ const routerMap = [
 
 const dynamicRouterMap = [
   {
-    path: '/in',
-    name: 'in',
-    component: In,
-    meta: {
-      title: '采购进货',
-      redblue: true,
-      keepAlive: false
-    }
-  },
-  {
-    path: '/in_form',
-    name: 'in_form',
-    component: () => import('@/views/in/form'),
-    meta: {
-      title: '采购进货',
-      keepAlive: false
-    }
-  },
-  {
-    path: '/out',
-    name: 'out',
-    component: Out,
-    meta: {
-      title: '材料出库',
-      redblue: true,
-      keepAlive: false
-    }
-  },
-  {
-    path: '/out_form',
-    name: 'out_form',
-    component: () => import('@/views/out/form'),
-    meta: {
-      title: '材料出库',
-      keepAlive: false
-    }
-  },
-  {
-    path: '/pin',
-    name: 'pin',
-    component: Pin,
-    meta: {
-      title: '产成品入库',
-      redblue: true,
-      keepAlive: false
-    }
-  },
-  {
-    path: '/pin_form',
-    name: 'pin_form',
-    component: () => import('@/views/pin/form'),
-    meta: {
-      title: '产成品入库',
-      redblue: true,
-      keepAlive: false
-    }
-  },
-  {
     path: '/so',
     name: 'so',
     component: So,
     meta: {
-      title: '销售出库',
-      redblue: true,
+      title: '销售发货',
+      redblue: false,
       keepAlive: false
     }
   },
@@ -102,17 +49,57 @@ const dynamicRouterMap = [
     name: 'so_form',
     component: () => import('@/views/so/form'),
     meta: {
-      title: '销售出库',
+      title: '销售发货',
       redblue: false,
       keepAlive: false
     }
   },
   {
-    path: '/stock',
-    name: 'stock',
-    component: Stock,
+    path: '/so_back',
+    name: 'so_back',
+    component: () => import('@/views/soback/form'),
     meta: {
-      title: '库存查询',
+      title: '销售回收',
+      redblue: false,
+      keepAlive: false
+    }
+  },
+  {
+    path: '/clear_back',
+    name: 'clear_back',
+    component: () => import('@/views/clearback/form'),
+    meta: {
+      title: '清洗回收',
+      redblue: false,
+      keepAlive: false
+    }
+  },
+  {
+    path: '/other_back',
+    name: 'other_back',
+    component: () => import('@/views/otherback/form'),
+    meta: {
+      title: '其他回收',
+      redblue: false,
+      keepAlive: false
+    }
+  },
+  {
+    path: '/scan_scrap',
+    name: 'scan_scrap',
+    component: () => import('@/views/scanscrap/form'),
+    meta: {
+      title: '扫码报废',
+      redblue: false,
+      keepAlive: false
+    }
+  },
+  {
+    path: '/query',
+    name: 'query',
+    component: Query,
+    meta: {
+      title: '信息查询',
       redblue: false,
       keepAlive: false
     }

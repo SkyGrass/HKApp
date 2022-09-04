@@ -40,14 +40,9 @@ router.beforeEach((to, from, next) => {
     from.meta.scrollTop = scrollTop
   }
   next()
-  // if (freePath.findIndex(f => f == to.path) < 0 && (getToken() == '' || getToken() == null)) {
-  //   next({ replace: true, path: '/login', query: { reason: 'timeout' } })
-  // } else {
-  //   next()
-  // }
+
 })
 
-// Detail see: https://github.com/vuejs/vue-router/issues/1234#issuecomment-357941465
 export function resetRouter() {
   const newRouter = createRouter()
   router.matcher = newRouter.matcher // reset router

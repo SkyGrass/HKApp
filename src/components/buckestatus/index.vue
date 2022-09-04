@@ -2,7 +2,7 @@
   <van-popup v-model="show" position="center" :style="{ height: '50%', width: '100%' }">
     <van-picker
       show-toolbar
-      :title="title"
+      title="选择桶状态"
       :columns="columns"
       :default-index="defaulIndex"
       @cancel="cancel"
@@ -12,7 +12,7 @@
 </template>
 <script>
 export default {
-  name: `rd`,
+  name: `bucketstatus`,
   props: {
     source: {
       type: Array,
@@ -24,22 +24,7 @@ export default {
   },
   data() {
     return {
-      show: false,
-      flag: 1
-    }
-  },
-  computed: {
-    columns() {
-      return this.$props.source.map(m => {
-        return `${m.cRdCode}||${m.cRdName}`
-      })
-    },
-    title() {
-      if (this.flag == '1') {
-        return '选择入库方式'
-      } else if (this.flag == '0') {
-        return '选择出库方式'
-      }
+      show: false
     }
   },
   watch: {
@@ -49,11 +34,15 @@ export default {
       }
     }
   },
+  computed: {
+    columns() {
+      return this.$props.source.map(m => {
+        return m.FName
+      })
+    }
+  },
   methods: {
-    open(_flag) {
-      if (_flag != void 0) {
-        this.flag = _flag
-      }
+    open() {
       this.show = true
     },
     dismiss() {

@@ -35,7 +35,6 @@ export default {
   data() {
     return {
       list: [],
-      origin: []
     }
   },
   computed: {
@@ -51,29 +50,20 @@ export default {
   },
   methods: {
     redirect({ id, path }) {
-      const children = this.origin.filter(f => f.FParentID == id);
-      if (children.length > 0) {//展示子集
-        this.$router.push({
-          path: 'subhome',
-          query: {
-            from: id
-          }
-        })
-      } else {
-        this.$router.push({
-          path: path,
-          query: {
-            t: new Date() * 1,
-            from: id
-          }
-        })
-      }
+      this.$router.push({
+        path: path,
+        query: {
+          t: new Date() * 1,
+          from: id
+        }
+      })
     }
   },
   mounted() {
+    const fromId = this.$route.query.from
+
     getMenu({}).then(({ Data }) => {
-      this.origin = Data;
-      this.list = Data.filter(f => f.FParentID == 0).map(m => {
+      this.list = Data.filter(f => f.FParentID == fromId || 0).map(m => {
         return { id: m.FItemID, icon: m.FImage || 'icon_list.png', label: m.FName, path: m.FUrl }
       })
     })

@@ -20,9 +20,9 @@ export function getDispatch(data) {
 }
 
 //销售出库明细
-export function saveProStockOut(data) {
+export function savebucket(data) {
   return request({
-    url: 'BuildSaleOut',
+    url: 'SaveBucket',
     method: 'post',
     data
   })

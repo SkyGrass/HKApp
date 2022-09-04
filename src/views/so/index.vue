@@ -136,7 +136,7 @@ export default {
   },
   methods: {
     onLoad() {
-      this.sourceList = []
+      this.sourceList = [] 
       getDispatchHead(
         Object.assign(
           {},
@@ -178,7 +178,7 @@ export default {
     }
   },
   created() {
-    this.rob = this.$route.query.redblue
+    this.rob = this.$route.query.redblue || 1
   },
   mounted() {
     this.$nextTick(() => {

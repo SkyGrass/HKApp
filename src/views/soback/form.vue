@@ -5,17 +5,6 @@
         <div class="list0" id="list0">
           <div ref="postForm" class="postForm inputForm">
             <van-field
-              class="item"
-              v-model="cacheForm.Row"
-              readonly
-              name="cWhName"
-              label="源单行"
-              placeholder="请选择源单行"
-              is-link
-              @click="openSource"
-            />
-
-            <van-field
               type="text"
               name="cBarcode"
               label="条码"
@@ -36,8 +25,18 @@
               readonly
               placeholder="名称"
             ></van-field>
-            <van-field name="type" label="类别" ref="ele_ftype" v-model="form.FType" readonly placeholder="类别">
+            <van-field
+              name="type"
+              label="类别"
+              ref="ele_ftype"
+              v-model="form.FType"
+              readonly
+              placeholder="类别"
+              is-link
+              @click="openBucketType"
+            >
             </van-field>
+
             <van-field
               name="fsatus"
               label="状态"
@@ -45,6 +44,8 @@
               v-model="form.FStatus"
               readonly
               placeholder="状态"
+              is-link
+              @click="openBucketStatus"
             ></van-field>
             <van-field
               name="fcreatedate"
@@ -96,7 +97,6 @@
               class="van-hairline--bottom"
               @click="onDelete(index)"
             >
-              <li style="padding: 2px">行号：{{ item.iRowno }}</li>
               <li style="padding: 2px">编码：{{ item.FSN }}</li>
               <li style="padding: 2px">名称：{{ item.FName }}</li>
               <li style="padding: 2px; width: 80%; display: inline-flex; justify-content: space-between">
@@ -115,71 +115,33 @@
           </van-list>
         </div>
       </van-tab>
-      <van-tab title="源单页">
-        <div class="list">
-          <ul style="padding: 5px; font-size: 14px">
-            <li style="padding: 2px">日期：{{ queryForm.dDate }}</li>
-            <li style="padding: 2px">单号：{{ queryForm.cCode }}</li>
-            <li style="padding: 2px">客户：{{ queryForm.cCusCode }}||{{ queryForm.cCusName }}</li>
-          </ul>
-          <van-divider>明细</van-divider>
-          <van-list v-model="loading" :finished="finished" @load="onLoad">
-            <ul
-              v-for="(item, index) in sourceList"
-              :key="index"
-              style="padding: 5px; font-size: 14px"
-              class="van-hairline--bottom"
-            >
-              <li style="padding: 2px; width: 80%; display: inline-flex; justify-content: space-between">
-                <div>行号：{{ item.iRowno }}</div>
-                <div>
-                  <strong :style="{ color: item.iNum > item.iNum2 ? 'red' : item.iNum < item.iNum2 ? '#333' : 'green' }"
-                    >已扫：{{ item.iNum }} / {{ item.iNum2 }}</strong
-                  >
-                </div>
-              </li>
-              <li style="padding: 2px">存货编码：{{ item.cInvCode }}</li>
-              <li style="padding: 2px">存货名称：{{ item.cInvName }}</li>
-              <li style="padding: 2px">单位：{{ item.cComUnitName }}</li>
-              <li style="padding: 2px; width: 80%; display: inline-flex; justify-content: space-between">
-                <div>数量：{{ item.iQuantity }}</div>
-                <div>件数：{{ item.iNum2 }}</div>
-              </li>
-              <li style="padding: 2px; width: 80%; display: inline-flex; justify-content: space-between">
-                <div>是否回收：{{ item.FIsRecovery }}</div>
-                <div>桶类型：{{ item.FPermitBucketType }}</div>
-              </li>
-            </ul>
-          </van-list>
-        </div>
-      </van-tab>
     </van-tabs>
-    <sourcerow ref="sourcerow" :source="sourceList" @choose="pickSource" @cancel="cancelPicker" />
+    <bucketstatus
+      ref="bucketstatus"
+      :source="sources.bucketStatusList"
+      @choose="pickBucketStatus"
+      @cancel="cancelPicker"
+    />
+    <buckettype ref="buckettype" :source="sources.bucketTypeList" @choose="pickBucketType" @cancel="cancelPicker" />
   </div>
 </template>
 <script>
-import { getDispatch, savebucket } from '@/api/so'
+import { savebucket } from '@/api/so'
 import { newGuid, floatAdd, floatSub } from '@/utils'
-import { getInventory } from '@/api/base'
-import sourcerow from '@/components/sourcerow'
+import { getInventory, getBucketType, getBucketStatus } from '@/api/base'
+import bucketstatus from '@/components/buckestatus'
+import buckettype from '@/components/bucketype'
 import dayjs from 'dayjs'
 export default {
-  name: `so_form`,
-  components: { sourcerow },
+  name: `so_back`,
+  components: { bucketstatus, buckettype },
   data() {
     this.confirm = 0
-    this.BUSTYPE = 1
+    this.BUSTYPE = 2
     return {
       active: 0,
       queryForm: {},
-      cacheForm: {
-        Row: '',
-        iRowno: 0,
-        Autoid: 0,
-        FIsControlBucketNum: false,
-        iNum2: 0
-      },
-      sourceList: [],
+
       loading: false,
       finished: false,
       curRow: {},
@@ -199,6 +161,10 @@ export default {
         FType: '',
         FUseNum: 0
       },
+      sources: {
+        bucketTypeList: [],
+        bucketStatusList: []
+      },
       curEle: ''
     }
   },
@@ -207,34 +173,10 @@ export default {
       if (newV == 0) {
         this.curEle = 'ele_cBarcode'
         this.setFocus()
-      } else if (newV == 2) {
-        this.reCalc()
       }
     }
   },
   methods: {
-    onLoad() {
-      this.sourceList = []
-      getDispatch({ cFilter: this.queryForm.ID, FROB: this.queryForm.bRob })
-        .then(({ Data }) => {
-          this.sourceList = Data.map(f => {
-            f.FIsRecovery = f.FIsRecovery ? '是' : '否'
-            f.Row = `行：${f.iRowno}||${f.cInvName}`
-            return f
-          })
-
-          if (this.sourceList.length > 0) {
-            this.cacheForm.iRowno = this.sourceList[0].iRowno
-            this.cacheForm.Row = this.sourceList[0].Row
-            this.cacheForm.Autoid = this.sourceList[0].Autoid
-            this.cacheForm.FIsControlBucketNum = this.sourceList[0].FIsControlBucketNum
-            this.cacheForm.iNum2 = this.sourceList[0].iNum2
-          }
-        })
-        .catch(err => {})
-      this.loading = false
-      this.finished = true
-    },
     onDelete(index) {
       this.$dialog
         .confirm({
@@ -252,27 +194,16 @@ export default {
       this.clearForm()
     },
     onSubmit() {
-      if (this.checkPlan(1)) {
-        this.curEle = 'ele_cBarcode'
+      if (this.form.FStatus == '') {
         return this.$toast({
           type: 'fail',
-          message: '件数超过源单!'
+          message: '请先选择状态'
         })
       }
-
       this.cacheList.push(Object.assign({}, this.form, this.cacheForm))
-
       this.clearForm()
     },
     onSave() {
-      if (this.checkPlan(0)) {
-        this.curEle = 'ele_cBarcode'
-        return this.$toast({
-          type: 'fail',
-          message: '扫描的桶数超过或不足源单要求,请核实!'
-        })
-      }
-
       this.$dialog
         .confirm({
           title: '提示',
@@ -364,8 +295,7 @@ export default {
 
       getInventory({
         FSN: this.form.cBarcode,
-        FType: this.BUSTYPE,
-        Autoid: this.cacheForm.Autoid
+        FType: this.BUSTYPE
       })
         .then(({ Data, Message }) => {
           if (Data.length > 0) {
@@ -374,8 +304,8 @@ export default {
             this.form.FSN = FSN
             this.form.FName = FName
             this.form.FType = FType
-            this.form.FStatus = FStatus
-            this.form.FStatusID = FStatusID
+            // this.form.FStatus = FStatus
+            // this.form.FStatusID = FStatusID
             this.form.FCreateDate = FCreateDate
             this.form.FMaker = FMaker
             this.form.FUseNum = FUseNum
@@ -405,10 +335,12 @@ export default {
     },
     clearForm() {
       for (const key in this.form) {
-        if (this.$store.getters.numProps.includes(key)) {
-          this.form[key] = 0
-        } else {
-          this.form[key] = ''
+        if (key != 'FStatus' && key != 'FStatusID') {
+          if (this.$store.getters.numProps.includes(key)) {
+            this.form[key] = 0
+          } else {
+            this.form[key] = ''
+          }
         }
       }
       this.form.cBarcode = ''
@@ -426,50 +358,18 @@ export default {
       }
       window.localStorage.setItem('curEle', dom)
     },
-    checkPlan(isAdd) {
-      var a1 = this.sourceList.map(f => {
-        var a2 = this.cacheList.filter(ff => {
-          return ff.Autoid == f.Autoid
-        })
-        return {
-          Autoid: f.Autoid,
-          FIsControlBucketNum: f.FIsControlBucketNum,
-          iNum2: f.iNum2,
-          iNumR: a2.length
-        }
-      })
-
-      return isAdd
-        ? a1.some(f => {
-            return f.FIsControlBucketNum == true && floatSub(f.iNum2, f.iNumR) < isAdd
-          })
-        : a1.some(f => {
-            return f.FIsControlBucketNum == true && floatSub(f.iNum2, f.iNumR) != 0
-          })
+    openBucketStatus() {
+      this.$refs.bucketstatus.open()
     },
-    reCalc() {
-      this.sourceList.forEach((row, index) => {
-        const { Autoid } = row
-        var a2 = this.cacheList.filter(ff => {
-          return ff.Autoid == Autoid
-        })
-        row.iNum = a2.length
-        this.$set(this.sourceList, index, row)
-      })
+    openBucketType() {
+      this.$refs.buckettype.open()
     },
-    openSource() {
-      this.$refs.sourcerow.open()
+    pickBucketStatus({ FID, FName }) {
+      this.form.FStatus = FName
+      this.form.FStatusID = FID
     },
-    pickSource({ Autoid, FIsControlBucketNum, iNum2, iRowno }) {
-      this.cacheForm.iRowno = iRowno
-      this.cacheForm.Row = `行：${iRowno}||${cInvName}`
-      this.cacheForm.Autoid = Autoid
-      this.cacheForm.FIsControlBucketNum = FIsControlBucketNum
-      this.cacheForm.iNum2 = iNum2
-      this.$nextTick(() => {
-        this.curEle = 'ele_cBarcode'
-        this.setFocus()
-      })
+    pickBucketType({ FName }) {
+      this.form.FType = FName
     },
     cancelPicker() {
       this.setFocus()
@@ -480,7 +380,21 @@ export default {
     this.queryForm = Object.assign({}, this.$route.query)
   },
   mounted() {
-    this.onLoad()
+    setTimeout(() => {
+      getBucketType({ FType: this.BUSTYPE })
+        .then(({ Data }) => {
+          this.sources.bucketTypeList = Data
+        })
+        .catch(err => {})
+    }, 50)
+
+    setTimeout(() => {
+      getBucketStatus({ FType: this.BUSTYPE })
+        .then(({ Data }) => {
+          this.sources.bucketStatusList = Data
+        })
+        .catch(err => {})
+    }, 100)
 
     this.$nextTick(() => {
       if (this.$refs.ele_cBarcode != void 0) {
@@ -537,7 +451,6 @@ export default {
     .btn {
       width: 40%;
     }
-
     .submit {
       color: white;
       background: rgb(0, 133, 119);

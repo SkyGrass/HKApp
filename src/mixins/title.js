@@ -9,6 +9,7 @@ export const title = {
       if (this.$route.query.bRob != void 0) {
         flag = this.$route.query.bRob == '1' ? '(蓝字)' : '(红字)'
       }
+      flag = ''
       window.document.title = title == undefined ? '' : title + flag
     }
   }
