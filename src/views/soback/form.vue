@@ -32,7 +32,6 @@
               v-model="form.FType"
               readonly
               placeholder="类别"
-              is-link
               @click="openBucketType"
             >
             </van-field>
@@ -44,8 +43,15 @@
               v-model="form.FStatus"
               readonly
               placeholder="状态"
-              is-link
               @click="openBucketStatus"
+            ></van-field>
+            <van-field
+              name="fcustname"
+              label="客户"
+              ref="ele_fcustname"
+              v-model="form.FCustName"
+              readonly
+              placeholder="客户"
             ></van-field>
             <van-field
               name="fcreatedate"
@@ -53,7 +59,7 @@
               ref="ele_fcreatedate"
               v-model="form.FCreateDate"
               readonly
-              placeholder="批号"
+              placeholder="建档日期"
             ></van-field>
             <van-field
               name="fmaker"
@@ -82,11 +88,11 @@
           </div>
           <div class="btns">
             <van-button class="btn" size="small" @click="doClear">清空</van-button>
-            <van-button class="btn submit" size="small" @click="onSubmit">提交</van-button>
+            <van-button class="btn submit" size="small" @click="onSubmit">保存</van-button>
           </div>
         </div>
       </van-tab>
-      <van-tab title="列表页">
+      <van-tab title="提交页">
         <div class="list1">
           <van-empty class="custom-image" description="没有记录" v-if="cacheList.length <= 0" />
           <van-list>
@@ -159,7 +165,8 @@ export default {
         FStatus: '',
         FStatusID: '',
         FType: '',
-        FUseNum: 0
+        FUseNum: 0,
+        FCustName: ''
       },
       sources: {
         bucketTypeList: [],
@@ -299,18 +306,21 @@ export default {
       })
         .then(({ Data, Message }) => {
           if (Data.length > 0) {
-            const { FClearNum, FCreateDate, FMaker, FName, FSN, FStatus, FStatusID, FType, FUseNum } = Data[0]
+            const { FClearNum, FCreateDate, FMaker, FName, FSN, FStatus, FStatusID, FType, FUseNum, FCustName } =
+              Data[0]
+
+            //this.sources.bucketStatusList = [{ FID: FStatusID, FName: FStatus }]
 
             this.form.FSN = FSN
             this.form.FName = FName
             this.form.FType = FType
-            // this.form.FStatus = FStatus
-            // this.form.FStatusID = FStatusID
+            this.form.FStatus = FStatus
+            this.form.FStatusID = FStatusID
             this.form.FCreateDate = FCreateDate
             this.form.FMaker = FMaker
             this.form.FUseNum = FUseNum
             this.form.FClearNum = FClearNum
-
+            this.form.FCustName = FCustName
             this.form.cBarcode = ''
             this.curEle = 'ele_cBarcode'
           } else {
@@ -335,12 +345,11 @@ export default {
     },
     clearForm() {
       for (const key in this.form) {
-        if (key != 'FStatus' && key != 'FStatusID') {
-          if (this.$store.getters.numProps.includes(key)) {
-            this.form[key] = 0
-          } else {
-            this.form[key] = ''
-          }
+        // if (key != 'FStatus' && key != 'FStatusID') {}
+        if (this.$store.getters.numProps.includes(key)) {
+          this.form[key] = 0
+        } else {
+          this.form[key] = ''
         }
       }
       this.form.cBarcode = ''
@@ -359,10 +368,10 @@ export default {
       window.localStorage.setItem('curEle', dom)
     },
     openBucketStatus() {
-      this.$refs.bucketstatus.open()
+      //this.$refs.bucketstatus.open()
     },
     openBucketType() {
-      this.$refs.buckettype.open()
+      //this.$refs.buckettype.open()
     },
     pickBucketStatus({ FID, FName }) {
       this.form.FStatus = FName
@@ -388,13 +397,13 @@ export default {
         .catch(err => {})
     }, 50)
 
-    setTimeout(() => {
-      getBucketStatus({ FType: this.BUSTYPE })
-        .then(({ Data }) => {
-          this.sources.bucketStatusList = Data
-        })
-        .catch(err => {})
-    }, 100)
+    // setTimeout(() => {
+    //   getBucketStatus({ FType: this.BUSTYPE })
+    //     .then(({ Data }) => {
+    //       this.sources.bucketStatusList = Data
+    //     })
+    //     .catch(err => {})
+    // }, 100)
 
     this.$nextTick(() => {
       if (this.$refs.ele_cBarcode != void 0) {

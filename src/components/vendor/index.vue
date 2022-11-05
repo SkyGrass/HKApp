@@ -10,7 +10,7 @@
     ></van-field>
     <van-picker
       show-toolbar
-      title="选择客户"
+      title="选择供应商"
       :columns="columns"
       :default-index="defaulIndex"
       @cancel="cancel"
@@ -20,7 +20,7 @@
 </template>
 <script>
 export default {
-  name: `customer`,
+  name: `vendor`,
   props: {
     source: {
       type: Array,
@@ -52,7 +52,7 @@ export default {
   computed: {
     columns() {
       return this.data.map(m => {
-        return `${m.cCusCode}||${m.cCusName}`
+        return `${m.cVenCode}||${m.cVenName}`
       })
     }
   },
@@ -73,7 +73,7 @@ export default {
     },
     query() {
       this.data = this.originData.filter(f => {
-        return f.cCusCode.indexOf(this.keyword) > -1 || f.cCusName.indexOf(this.keyword) > -1
+        return f.cVenCode.indexOf(this.keyword) > -1 || f.cVenName.indexOf(this.keyword) > -1
       })
       if (window.android) {
         android.HideSoftKeyboard()

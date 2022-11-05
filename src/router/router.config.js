@@ -39,7 +39,7 @@ const dynamicRouterMap = [
     name: 'so',
     component: So,
     meta: {
-      title: '销售发货',
+      title: '销售发出',
       redblue: false,
       keepAlive: false
     }
@@ -49,7 +49,7 @@ const dynamicRouterMap = [
     name: 'so_form',
     component: () => import('@/views/so/form'),
     meta: {
-      title: '销售发货',
+      title: '销售发出',
       redblue: false,
       keepAlive: false
     }
@@ -60,6 +60,16 @@ const dynamicRouterMap = [
     component: () => import('@/views/soback/form'),
     meta: {
       title: '销售回收',
+      redblue: false,
+      keepAlive: false
+    }
+  },
+  {
+    path: '/update',
+    name: 'update_form',
+    component: () => import('@/views/update/form'),
+    meta: {
+      title: '桶状态变更',
       redblue: false,
       keepAlive: false
     }

@@ -38,3 +38,12 @@ export function getCustomer(data) {
     data
   })
 }
+
+//获取供应商
+export function getVendor(data) {
+  return request({
+    url: 'Vendor',
+    method: 'post',
+    data
+  })
+}

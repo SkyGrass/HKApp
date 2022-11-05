@@ -13,6 +13,7 @@
           id="ele_cBarcode"
           @keyup.enter="queryInv"
         >
+          <template #button> <van-icon name="photograph" color="#008577" size="25" @click="doScan" /> </template>
         </van-field>
         <van-field name="fsn" label="编码" ref="ele_fsn" v-model="form.FSN" readonly placeholder="编码"></van-field>
         <van-field
@@ -183,11 +184,23 @@ export default {
         }, 300)
       }
       window.localStorage.setItem('curEle', dom)
+    },
+    doScan() {
+      if (window.android) {
+        android.openScan('ele_cBarcode')
+      }
     }
   },
   computed: {},
   created() {},
   mounted() {
+    window.scanResult = result => {
+      this.form.cBarcode = result
+      setTimeout(() => {
+        this.queryInv()
+      }, 600)
+    }
+
     this.$nextTick(() => {
       if (this.$refs.ele_cBarcode != void 0) {
         this.$refs.ele_cBarcode.focus()
@@ -204,6 +217,7 @@ export default {
   },
   beforeRouteLeave(to, from, next) {
     delete window.keyboardChange
+    delete window.scanResult
     next()
   }
 }

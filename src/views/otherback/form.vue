@@ -29,6 +29,8 @@
               placeholder="扫描或录入包装桶条码"
               id="ele_cBarcode"
               @keyup.enter="queryInv"
+            >
+              <template #button> <van-icon name="photograph" color="#008577" size="25" @click="doScan" /> </template
             ></van-field>
 
             <van-field name="fsn" label="编码" ref="ele_fsn" v-model="form.FSN" readonly placeholder="编码"></van-field>
@@ -97,11 +99,11 @@
           </div>
           <div class="btns">
             <van-button class="btn" size="small" @click="doClear">清空</van-button>
-            <van-button class="btn submit" size="small" @click="onSubmit">提交</van-button>
+            <van-button class="btn submit" size="small" @click="onSubmit">保存</van-button>
           </div>
         </div>
       </van-tab>
-      <van-tab title="列表页">
+      <van-tab title="提交页">
         <div class="list1">
           <van-empty class="custom-image" description="没有记录" v-if="cacheList.length <= 0" />
           <van-list>
@@ -408,6 +410,11 @@ export default {
     },
     cancelPicker() {
       this.setFocus()
+    },
+    doScan() {
+      if (window.android) {
+        android.openScan('ele_cBarcode')
+      }
     }
   },
   computed: {},
@@ -415,6 +422,13 @@ export default {
     this.queryForm = Object.assign({}, this.$route.query)
   },
   mounted() {
+    window.scanResult = result => {
+      this.form.cBarcode = result
+      setTimeout(() => {
+        this.queryInv()
+      }, 600)
+    }
+
     setTimeout(() => {
       getBucketType({ FType: this.BUSTYPE })
         .then(({ Data }) => {
@@ -456,10 +470,12 @@ export default {
   beforeRouteLeave(to, from, next) {
     if (this.confirm != 0) {
       delete window.keyboardChange
+      delete window.scanResult
       next(false)
     }
     if (this.cacheList.length <= 0) {
       delete window.keyboardChange
+      delete window.scanResult
       next()
     } else {
       setTimeout(() => {
@@ -470,10 +486,12 @@ export default {
           })
           .then(() => {
             delete window.keyboardChange
+            delete window.scanResult
             next()
           })
           .catch(() => {
             delete window.keyboardChange
+            delete window.scanResult
             next(false)
           })
       }, 200)

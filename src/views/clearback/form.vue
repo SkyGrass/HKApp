@@ -1,5 +1,20 @@
 <template>
   <div class="container">
+    <div class="header van-hairline--bottom">
+      <van-form class="postForm">
+        <van-field
+          class="item"
+          v-model="headForm.cVenName"
+          readonly
+          name="cVenName"
+          id="ele_cVenName"
+          label="供应商"
+          placeholder="请选择供应商"
+          is-link
+          @click="openVendor"
+        />
+      </van-form>
+    </div>
     <van-tabs v-model="active" color="#008577">
       <van-tab title="扫描页">
         <div class="list0" id="list0">
@@ -14,6 +29,8 @@
               placeholder="扫描或录入包装桶条码"
               id="ele_cBarcode"
               @keyup.enter="queryInv"
+            >
+              <template #button> <van-icon name="photograph" color="#008577" size="25" @click="doScan" /> </template
             ></van-field>
 
             <van-field name="fsn" label="编码" ref="ele_fsn" v-model="form.FSN" readonly placeholder="编码"></van-field>
@@ -82,11 +99,11 @@
           </div>
           <div class="btns">
             <van-button class="btn" size="small" @click="doClear">清空</van-button>
-            <van-button class="btn submit" size="small" @click="onSubmit">提交</van-button>
+            <van-button class="btn submit" size="small" @click="onSubmit">保存</van-button>
           </div>
         </div>
       </van-tab>
-      <van-tab title="列表页">
+      <van-tab title="提交页">
         <div class="list1">
           <van-empty class="custom-image" description="没有记录" v-if="cacheList.length <= 0" />
           <van-list>
@@ -123,25 +140,27 @@
       @cancel="cancelPicker"
     />
     <buckettype ref="buckettype" :source="sources.bucketTypeList" @choose="pickBucketType" @cancel="cancelPicker" />
+    <vendor ref="vendor" :source="sources.vendorList" @choose="pickVendor" @cancel="cancelPicker" />
   </div>
 </template>
 <script>
 import { savebucket } from '@/api/so'
 import { newGuid, floatAdd, floatSub } from '@/utils'
-import { getInventory, getBucketType, getBucketStatus } from '@/api/base'
+import { getInventory, getBucketType, getBucketStatus, getVendor } from '@/api/base'
 import bucketstatus from '@/components/buckestatus'
 import buckettype from '@/components/bucketype'
+import vendor from '@/components/vendor'
 import dayjs from 'dayjs'
 export default {
   name: `clear_back`,
-  components: { bucketstatus, buckettype },
+  components: { bucketstatus, buckettype, vendor },
   data() {
     this.confirm = 0
     this.BUSTYPE = 3
     return {
       active: 0,
       queryForm: {},
-
+      headForm: { cVenCode: '', cVenName: '' },
       loading: false,
       finished: false,
       curRow: {},
@@ -163,7 +182,8 @@ export default {
       },
       sources: {
         bucketTypeList: [],
-        bucketStatusList: []
+        bucketStatusList: [],
+        vendorList: []
       },
       curEle: ''
     }
@@ -210,6 +230,12 @@ export default {
       this.clearForm()
     },
     onSave() {
+      if (this.headForm.cVenName == '') {
+        return this.$toast({
+          type: 'fail',
+          message: '请先选择供应商'
+        })
+      }
       this.$dialog
         .confirm({
           title: '提示',
@@ -220,6 +246,7 @@ export default {
           const { accountId } = this.$store.getters
           const form = Object.assign(
             {},
+            { FVenCode: this.headForm.cVenCode },
             {
               cSign: this.cSign,
               FType: this.BUSTYPE,
@@ -371,6 +398,9 @@ export default {
     openBucketType() {
       this.$refs.buckettype.open()
     },
+    openVendor() {
+      this.$refs.vendor.open()
+    },
     pickBucketStatus({ FID, FName }) {
       this.form.FStatus = FName
       this.form.FStatusID = FID
@@ -378,8 +408,17 @@ export default {
     pickBucketType({ FName }) {
       this.form.FType = FName
     },
+    pickVendor({ cVenCode, cVenName }) {
+      this.headForm.cVenCode = cVenCode
+      this.headForm.cVenName = cVenName
+    },
     cancelPicker() {
       this.setFocus()
+    },
+    doScan() {
+      if (window.android) {
+        android.openScan('ele_cBarcode')
+      }
     }
   },
   computed: {},
@@ -387,6 +426,13 @@ export default {
     this.queryForm = Object.assign({}, this.$route.query)
   },
   mounted() {
+    window.scanResult = result => {
+      this.form.cBarcode = result
+      setTimeout(() => {
+        this.queryInv()
+      }, 600)
+    }
+
     setTimeout(() => {
       getBucketType({ FType: this.BUSTYPE })
         .then(({ Data }) => {
@@ -396,9 +442,21 @@ export default {
     }, 50)
 
     setTimeout(() => {
+      getVendor({ FType: this.BUSTYPE })
+        .then(({ Data }) => {
+          this.sources.vendorList = Data
+        })
+        .catch(err => {})
+    }, 150)
+
+    setTimeout(() => {
       getBucketStatus({ FType: this.BUSTYPE })
         .then(({ Data }) => {
           this.sources.bucketStatusList = Data
+          if (Data.length == 1) {
+            this.form.FStatusID = Data[0].FID
+            this.form.FStatus = Data[0].FName
+          }
         })
         .catch(err => {})
     }, 100)
@@ -420,10 +478,12 @@ export default {
   beforeRouteLeave(to, from, next) {
     if (this.confirm != 0) {
       delete window.keyboardChange
+      delete window.scanResult
       next(false)
     }
     if (this.cacheList.length <= 0) {
       delete window.keyboardChange
+      delete window.scanResult
       next()
     } else {
       setTimeout(() => {
@@ -434,10 +494,12 @@ export default {
           })
           .then(() => {
             delete window.keyboardChange
+            delete window.scanResult
             next()
           })
           .catch(() => {
             delete window.keyboardChange
+            delete window.scanResult
             next(false)
           })
       }, 200)
@@ -479,17 +541,17 @@ export default {
 
   .list0,
   .list {
-    height: calc(100vh - 10px);
+    height: calc(100vh - 60px);
     overflow: scroll;
   }
 
   .sourceList {
-    height: calc(100vh - 10px);
+    height: calc(100vh - 60px);
     overflow: scroll;
   }
 
   .list1 {
-    height: calc(100vh - 60px);
+    height: calc(100vh - 130px);
     overflow: scroll;
   }
 

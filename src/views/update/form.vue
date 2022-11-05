@@ -5,17 +5,6 @@
         <div class="list0" id="list0">
           <div ref="postForm" class="postForm inputForm">
             <van-field
-              class="item"
-              v-model="cacheForm.Row"
-              readonly
-              name="cWhName"
-              label="源单行"
-              placeholder="请选择源单行"
-              is-link
-              @click="openSource"
-            />
-
-            <van-field
               type="text"
               name="cBarcode"
               label="条码"
@@ -25,8 +14,6 @@
               placeholder="扫描或录入包装桶条码"
               id="ele_cBarcode"
               @keyup.enter="queryInv"
-            >
-              <template #button> <van-icon name="photograph" color="#008577" size="25" @click="doScan" /> </template
             ></van-field>
 
             <van-field name="fsn" label="编码" ref="ele_fsn" v-model="form.FSN" readonly placeholder="编码"></van-field>
@@ -38,8 +25,17 @@
               readonly
               placeholder="名称"
             ></van-field>
-            <van-field name="type" label="类别" ref="ele_ftype" v-model="form.FType" readonly placeholder="类别">
+            <van-field
+              name="type"
+              label="类别"
+              ref="ele_ftype"
+              v-model="form.FType"
+              readonly
+              placeholder="类别" 
+              @click="openBucketType"
+            >
             </van-field>
+
             <van-field
               name="fsatus"
               label="状态"
@@ -47,6 +43,16 @@
               v-model="form.FStatus"
               readonly
               placeholder="状态"
+              is-link
+              @click="openBucketStatus"
+            ></van-field>
+            <van-field
+              name="fcustname"
+              label="客户"
+              ref="ele_fcustname"
+              v-model="form.FCustName"
+              readonly
+              placeholder="客户"
             ></van-field>
             <van-field
               name="fcreatedate"
@@ -54,7 +60,7 @@
               ref="ele_fcreatedate"
               v-model="form.FCreateDate"
               readonly
-              placeholder="批号"
+              placeholder="建档日期"
             ></van-field>
             <van-field
               name="fmaker"
@@ -83,7 +89,7 @@
           </div>
           <div class="btns">
             <van-button class="btn" size="small" @click="doClear">清空</van-button>
-            <!-- <van-button class="btn submit" size="small" @click="onSubmit">保存</van-button> -->
+            <van-button class="btn submit" size="small" @click="onSubmit">保存</van-button>
           </div>
         </div>
       </van-tab>
@@ -98,7 +104,6 @@
               class="van-hairline--bottom"
               @click="onDelete(index)"
             >
-              <li style="padding: 2px; color: red; font-weight: bold">行号：{{ item.iRowno }}</li>
               <li style="padding: 2px">编码：{{ item.FSN }}</li>
               <li style="padding: 2px">名称：{{ item.FName }}</li>
               <li style="padding: 2px; width: 80%; display: inline-flex; justify-content: space-between">
@@ -117,72 +122,33 @@
           </van-list>
         </div>
       </van-tab>
-      <van-tab title="源单页">
-        <div class="list">
-          <ul style="padding: 5px; font-size: 14px">
-            <li style="padding: 2px">日期：{{ queryForm.dDate }}</li>
-            <li style="padding: 2px">单号：{{ queryForm.cCode }}</li>
-            <li style="padding: 2px">客户：{{ queryForm.cCusCode }}||{{ queryForm.cCusName }}</li>
-          </ul>
-          <van-divider>明细</van-divider>
-          <van-list v-model="loading" :finished="finished" @load="onLoad">
-            <ul
-              v-for="(item, index) in sourceList"
-              :key="index"
-              style="padding: 5px; font-size: 14px"
-              class="van-hairline--bottom"
-            >
-              <li style="padding: 2px; width: 80%; display: inline-flex; justify-content: space-between">
-                <div style="color: red; font-weight: bold">行号：{{ item.iRowno }}</div>
-                <div>
-                  <strong :style="{ color: item.iNum > item.iNum2 ? 'red' : item.iNum < item.iNum2 ? '#333' : 'green' }"
-                    >已扫：{{ item.iNum }} / {{ item.iNum2 }}</strong
-                  >
-                </div>
-              </li>
-              <li style="padding: 2px">存货编码：{{ item.cInvCode }}</li>
-              <li style="padding: 2px">存货名称：{{ item.cInvName }}</li>
-              <li style="padding: 2px">规格型号：{{ item.cInvStd }}</li>
-              <li style="padding: 2px">单位：{{ item.cComUnitName }}</li>
-              <li style="padding: 2px; width: 80%; display: inline-flex; justify-content: space-between">
-                <div>数量：{{ item.iQuantity }}</div>
-                <div>件数：{{ item.iNum2 }}</div>
-              </li>
-              <li style="padding: 2px; width: 80%; display: inline-flex; justify-content: space-between">
-                <div>是否回收：{{ item.FIsRecovery }}</div>
-                <div>桶类型：{{ item.FPermitBucketType }}</div>
-              </li>
-            </ul>
-          </van-list>
-        </div>
-      </van-tab>
     </van-tabs>
-    <sourcerow ref="sourcerow" :source="sourceList" @choose="pickSource" @cancel="cancelPicker" />
+    <bucketstatus
+      ref="bucketstatus"
+      :source="sources.bucketStatusList"
+      @choose="pickBucketStatus"
+      @cancel="cancelPicker"
+    />
+    <buckettype ref="buckettype" :source="sources.bucketTypeList" @choose="pickBucketType" @cancel="cancelPicker" />
   </div>
 </template>
 <script>
-import { getDispatch, savebucket } from '@/api/so'
+import { savebucket } from '@/api/so'
 import { newGuid, floatAdd, floatSub } from '@/utils'
-import { getInventory } from '@/api/base'
-import sourcerow from '@/components/sourcerow'
+import { getInventory, getBucketType, getBucketStatus } from '@/api/base'
+import bucketstatus from '@/components/buckestatus'
+import buckettype from '@/components/bucketype'
 import dayjs from 'dayjs'
 export default {
-  name: `so_form`,
-  components: { sourcerow },
+  name: `update_form`,
+  components: { bucketstatus, buckettype },
   data() {
     this.confirm = 0
-    this.BUSTYPE = 1
+    this.BUSTYPE = 6
     return {
       active: 0,
       queryForm: {},
-      cacheForm: {
-        Row: '',
-        iRowno: 0,
-        Autoid: 0,
-        FIsControlBucketNum: false,
-        iNum2: 0
-      },
-      sourceList: [],
+
       loading: false,
       finished: false,
       curRow: {},
@@ -200,7 +166,12 @@ export default {
         FStatus: '',
         FStatusID: '',
         FType: '',
-        FUseNum: 0
+        FUseNum: 0,
+        FCustName: ''
+      },
+      sources: {
+        bucketTypeList: [],
+        bucketStatusList: []
       },
       curEle: ''
     }
@@ -210,34 +181,10 @@ export default {
       if (newV == 0) {
         this.curEle = 'ele_cBarcode'
         this.setFocus()
-      } else if (newV == 2) {
-        this.reCalc()
       }
     }
   },
   methods: {
-    onLoad() {
-      this.sourceList = []
-      getDispatch({ cFilter: this.queryForm.ID, FROB: this.queryForm.bRob })
-        .then(({ Data }) => {
-          this.sourceList = Data.map(f => {
-            f.FIsRecovery = f.FIsRecovery ? '是' : '否'
-            f.Row = `行：${f.iRowno}||${f.cInvName}`
-            return f
-          })
-
-          if (this.sourceList.length > 0) {
-            this.cacheForm.iRowno = this.sourceList[0].iRowno
-            this.cacheForm.Row = this.sourceList[0].Row
-            this.cacheForm.Autoid = this.sourceList[0].Autoid
-            this.cacheForm.FIsControlBucketNum = this.sourceList[0].FIsControlBucketNum
-            this.cacheForm.iNum2 = this.sourceList[0].iNum2
-          }
-        })
-        .catch(err => {})
-      this.loading = false
-      this.finished = true
-    },
     onDelete(index) {
       this.$dialog
         .confirm({
@@ -255,32 +202,16 @@ export default {
       this.clearForm()
     },
     onSubmit() {
-      if (this.checkPlan(1)) {
-        this.curEle = 'ele_cBarcode'
+      if (this.form.FStatus == '') {
         return this.$toast({
           type: 'fail',
-          message: '件数超过源单!'
+          message: '请先选择状态'
         })
       }
-
       this.cacheList.push(Object.assign({}, this.form, this.cacheForm))
-
       this.clearForm()
-      this.$toast({
-        type: 'success',
-        position: 'bottom',
-        message: '已保存'
-      })
     },
     onSave() {
-      if (this.checkPlan1(0)) {
-        this.curEle = 'ele_cBarcode'
-        return this.$toast({
-          type: 'fail',
-          message: '扫描的桶数超过或不足源单要求,请核实!'
-        })
-      }
-
       this.$dialog
         .confirm({
           title: '提示',
@@ -372,74 +303,35 @@ export default {
 
       getInventory({
         FSN: this.form.cBarcode,
-        FType: this.BUSTYPE,
-        Autoid: this.cacheForm.Autoid
+        FType: this.BUSTYPE
       })
         .then(({ Data, Message }) => {
-          if (Message != '') {
-            this.$dialog
-              .confirm({
-                title: '提示',
-                message: Message
-              })
-              .then(() => {
-                if (Data.length > 0) {
-                  const { FClearNum, FCreateDate, FMaker, FName, FSN, FStatus, FStatusID, FType, FUseNum } = Data[0]
+          if (Data.length > 0) {
+            const { FClearNum, FCreateDate, FMaker, FName, FSN, FStatus, FStatusID, FType, FUseNum, FCustName } =
+              Data[0]
 
-                  this.form.FSN = FSN
-                  this.form.FName = FName
-                  this.form.FType = FType
-                  this.form.FStatus = FStatus
-                  this.form.FStatusID = FStatusID
-                  this.form.FCreateDate = FCreateDate
-                  this.form.FMaker = FMaker
-                  this.form.FUseNum = FUseNum
-                  this.form.FClearNum = FClearNum
-
-                  this.onSubmit()
-                  this.form.cBarcode = ''
-                  this.curEle = 'ele_cBarcode'
-                } else {
-                  this.form.cBarcode = ''
-                  this.curEle = 'ele_cBarcode'
-                  return this.$toast({
-                    type: 'fail',
-                    message: Message,
-                    onOpened: () => {
-                      this.setFocus(true)
-                    }
-                  })
-                }
-              })
-              .catch(() => {})
+            this.form.FSN = FSN
+            this.form.FName = FName
+            this.form.FType = FType
+            this.form.FStatus = FStatus
+            this.form.FStatusID = FStatusID
+            this.form.FCreateDate = FCreateDate
+            this.form.FMaker = FMaker
+            this.form.FUseNum = FUseNum
+            this.form.FClearNum = FClearNum
+            this.form.FCustName = FCustName
+            this.form.cBarcode = ''
+            this.curEle = 'ele_cBarcode'
           } else {
-            if (Data.length > 0) {
-              const { FClearNum, FCreateDate, FMaker, FName, FSN, FStatus, FStatusID, FType, FUseNum } = Data[0]
-
-              this.form.FSN = FSN
-              this.form.FName = FName
-              this.form.FType = FType
-              this.form.FStatus = FStatus
-              this.form.FStatusID = FStatusID
-              this.form.FCreateDate = FCreateDate
-              this.form.FMaker = FMaker
-              this.form.FUseNum = FUseNum
-              this.form.FClearNum = FClearNum
-
-              this.onSubmit()
-              this.form.cBarcode = ''
-              this.curEle = 'ele_cBarcode'
-            } else {
-              this.form.cBarcode = ''
-              this.curEle = 'ele_cBarcode'
-              return this.$toast({
-                type: 'fail',
-                message: Message,
-                onOpened: () => {
-                  this.setFocus(true)
-                }
-              })
-            }
+            this.form.cBarcode = ''
+            this.curEle = 'ele_cBarcode'
+            return this.$toast({
+              type: 'fail',
+              message: Message,
+              onOpened: () => {
+                this.setFocus(true)
+              }
+            })
           }
         })
         .catch(err => {
@@ -451,13 +343,15 @@ export default {
         })
     },
     clearForm() {
-      // for (const key in this.form) {
-      //   if (this.$store.getters.numProps.includes(key)) {
-      //     this.form[key] = 0
-      //   } else {
-      //     this.form[key] = ''
-      //   }
-      // }
+      for (const key in this.form) {
+        if (key != 'FStatus' && key != 'FStatusID') {
+          if (this.$store.getters.numProps.includes(key)) {
+            this.form[key] = 0
+          } else {
+            this.form[key] = ''
+          }
+        }
+      }
       this.form.cBarcode = ''
       this.curEle = 'ele_cBarcode'
       this.setFocus()
@@ -473,73 +367,21 @@ export default {
       }
       window.localStorage.setItem('curEle', dom)
     },
-    checkPlan() {
-      var a1 = this.sourceList
-        .filter(f => f.Autoid == this.cacheForm.Autoid)
-        .map(f => {
-          var a2 = this.cacheList.filter(ff => {
-            return ff.Autoid == f.Autoid
-          })
-          return {
-            Autoid: f.Autoid,
-            FIsControlBucketNum: f.FIsControlBucketNum,
-            iNum2: f.iNum2,
-            iNumR: a2.length
-          }
-        })
-
-      return a1.some(f => {
-        return f.FIsControlBucketNum == true && floatSub(f.iNum2, f.iNumR) < 1
-      })
+    openBucketStatus() {
+      this.$refs.bucketstatus.open()
     },
-    checkPlan1() {
-      var a1 = this.sourceList.map(f => {
-        var a2 = this.cacheList.filter(ff => {
-          return ff.Autoid == f.Autoid
-        })
-        return {
-          Autoid: f.Autoid,
-          FIsControlBucketNum: f.FIsControlBucketNum,
-          iNum2: f.iNum2,
-          iNumR: a2.length
-        }
-      })
-
-      return a1.some(f => {
-        return f.FIsControlBucketNum == true && floatSub(f.iNum2, f.iNumR) != 0
-      })
+    openBucketType() {
+      //this.$refs.buckettype.open()
     },
-    reCalc() {
-      this.sourceList.forEach((row, index) => {
-        const { Autoid } = row
-        var a2 = this.cacheList.filter(ff => {
-          return ff.Autoid == Autoid
-        })
-        row.iNum = a2.length
-        this.$set(this.sourceList, index, row)
-      })
+    pickBucketStatus({ FID, FName }) {
+      this.form.FStatus = FName
+      this.form.FStatusID = FID
     },
-    openSource() {
-      this.$refs.sourcerow.open()
-    },
-    pickSource({ Autoid, FIsControlBucketNum, cInvName, iNum2, iRowno }) {
-      this.cacheForm.iRowno = iRowno
-      this.cacheForm.Row = `行：${iRowno}||${cInvName}`
-      this.cacheForm.Autoid = Autoid
-      this.cacheForm.FIsControlBucketNum = FIsControlBucketNum
-      this.cacheForm.iNum2 = iNum2
-      this.$nextTick(() => {
-        this.curEle = 'ele_cBarcode'
-        this.setFocus()
-      })
+    pickBucketType({ FName }) {
+      this.form.FType = FName
     },
     cancelPicker() {
       this.setFocus()
-    },
-    doScan() {
-      if (window.android) {
-        android.openScan('ele_cBarcode')
-      }
     }
   },
   computed: {},
@@ -547,14 +389,21 @@ export default {
     this.queryForm = Object.assign({}, this.$route.query)
   },
   mounted() {
-    this.onLoad()
+    setTimeout(() => {
+      getBucketType({ FType: this.BUSTYPE })
+        .then(({ Data }) => {
+          this.sources.bucketTypeList = Data
+        })
+        .catch(err => {})
+    }, 50)
 
-    window.scanResult = result => {
-      this.form.cBarcode = result
-      setTimeout(() => {
-        this.queryInv()
-      }, 600)
-    }
+    setTimeout(() => {
+      getBucketStatus({ FType: this.BUSTYPE })
+        .then(({ Data }) => {
+          this.sources.bucketStatusList = Data
+        })
+        .catch(err => {})
+    }, 100)
 
     this.$nextTick(() => {
       if (this.$refs.ele_cBarcode != void 0) {
@@ -573,12 +422,10 @@ export default {
   beforeRouteLeave(to, from, next) {
     if (this.confirm != 0) {
       delete window.keyboardChange
-      delete window.scanResult
       next(false)
     }
     if (this.cacheList.length <= 0) {
       delete window.keyboardChange
-      delete window.scanResult
       next()
     } else {
       setTimeout(() => {
@@ -589,12 +436,10 @@ export default {
           })
           .then(() => {
             delete window.keyboardChange
-            delete window.scanResult
             next()
           })
           .catch(() => {
             delete window.keyboardChange
-            delete window.scanResult
             next(false)
           })
       }, 200)
@@ -615,7 +460,6 @@ export default {
     .btn {
       width: 40%;
     }
-
     .submit {
       color: white;
       background: rgb(0, 133, 119);
