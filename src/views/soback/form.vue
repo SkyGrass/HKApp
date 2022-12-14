@@ -450,12 +450,6 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
-.child {
-  width: 40px;
-  height: 40px;
-  background: #f2f3f5;
-  border-radius: 4px;
-}
 .container {
   height: 100vh;
 
