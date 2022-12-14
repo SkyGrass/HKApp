@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <van-tabs v-model="active" color="#008577">
-      <van-tab title="扫描页">
+      <van-tab title="扫描页" :badge="cacheList.length">
         <div class="list0" id="list0">
           <div ref="postForm" class="postForm inputForm">
             <van-field
@@ -88,7 +88,7 @@
           </div>
           <div class="btns">
             <van-button class="btn" size="small" @click="doClear">清空</van-button>
-            <van-button class="btn submit" size="small" @click="onSubmit">保存</van-button>
+            <!-- <van-button class="btn submit" size="small" @click="onSubmit">保存</van-button> -->
           </div>
         </div>
       </van-tab>
@@ -321,6 +321,8 @@ export default {
             this.form.FUseNum = FUseNum
             this.form.FClearNum = FClearNum
             this.form.FCustName = FCustName
+
+            this.onSubmit()
             this.form.cBarcode = ''
             this.curEle = 'ele_cBarcode'
           } else {
@@ -448,6 +450,12 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
+.child {
+  width: 40px;
+  height: 40px;
+  background: #f2f3f5;
+  border-radius: 4px;
+}
 .container {
   height: 100vh;
 
@@ -458,7 +466,7 @@ export default {
     justify-content: space-around;
 
     .btn {
-      width: 40%;
+      width: 85%;
     }
     .submit {
       color: white;
